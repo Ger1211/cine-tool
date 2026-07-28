@@ -5,3 +5,4 @@ package.json
 !ejemplos/*.xlsx
 .DS_Store
 Thumbs.db
+AGENTS.md
