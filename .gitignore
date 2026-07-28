@@ -2,7 +2,7 @@ node_modules/
 package-lock.json
 package.json
 *.xlsx
-!ejemplos/*.xlsx
 .DS_Store
 Thumbs.db
 AGENTS.md
+ejemplos/
