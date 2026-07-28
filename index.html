@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cine — Herramienta</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='4' fill='%231a1a2e'/><text x='12' y='17' text-anchor='middle' font-size='14' fill='%23e94560'>🎬</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>Cine — Herramienta</h1>
+  <span class="badge">RRHH</span>
+</header>
+
+<main>
+  <!-- Paso 1: Cargar archivos -->
+  <section class="card" id="carga-archivos">
+    <h2><span class="step">1</span> Cargar archivos</h2>
+    <div class="drop-zones">
+      <div class="drop-zone" id="drop-nelclock">
+        <div class="icon">📄</div>
+        <div class="label">Nelclock (TXT)</div>
+        <div class="hint">Exportar desde Nelclock: Consulta → Municipal → TXT</div>
+        <div class="file-name" id="file-nelclock-name"></div>
+        <input type="file" id="input-nelclock" accept=".txt" />
+      </div>
+      <div class="drop-zone" id="drop-roster">
+        <div class="icon">📊</div>
+        <div class="label">Roster (Excel)</div>
+        <div class="hint">Descargar roster de OneDrive</div>
+        <div class="file-name" id="file-roster-name"></div>
+        <input type="file" id="input-roster" accept=".xlsx,.xls" />
+      </div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:8px; align-items:center;">
+      <label style="font-size:0.85rem; font-weight:600; white-space:nowrap;">Mes:</label>
+      <select id="select-mes" style="padding:6px 10px; border-radius:6px; border:1.5px solid #d0d0d8; font-size:0.85rem;">
+        <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+        <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+        <option value="7" selected>Julio</option><option value="8">Agosto</option>
+        <option value="9">Septiembre</option>
+        <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+      </select>
+      <label style="font-size:0.85rem; font-weight:600;">Año:</label>
+      <input type="number" id="input-anio" value="2026" min="2020" max="2030" style="width:70px; padding:6px 10px; border-radius:6px; border:1.5px solid #d0d0d8; font-size:0.85rem;" />
+      <button class="btn btn-primary btn-sm" id="btn-procesar" disabled>Procesar datos</button>
+    </div>
+  </section>
+
+  <!-- Paso 2: Resultados automáticos -->
+  <section class="card hidden" id="resultados-auto">
+    <h2><span class="step">2</span> Resultados automáticos</h2>
+
+    <div class="summary-cards">
+      <div class="summary-card warn" id="card-puntualidad">
+        <div class="number" id="num-perdieron">—</div>
+        <div class="label">Perdieron puntualidad</div>
+      </div>
+      <div class="summary-card" id="card-trasnoches">
+        <div class="number" id="num-trasnoches">—</div>
+        <div class="label">Trasnoches</div>
+      </div>
+      <div class="summary-card" id="card-4ta">
+        <div class="number" id="num-4ta">—</div>
+        <div class="label">4ta jornada</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="tab-puntualidad">Puntualidad</div>
+      <div class="tab" data-tab="tab-trasnoches">Trasnoches</div>
+      <div class="tab" data-tab="tab-4ta">4ta Jornada</div>
+    </div>
+
+    <div class="tab-content active" id="tab-puntualidad">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Hora prog.</th>
+              <th>Hora real</th>
+              <th>Dif. (min)</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-puntualidad"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-trasnoches">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Fecha</th>
+              <th>Entrada</th>
+              <th>Salida</th>
+              <th>Horas trasnoche</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-trasnoches"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-4ta">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>4tas Jornadas</th>
+              <th>Semanas</th>
+              <th>Días por semana</th>
+              <th>Motivo</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-4ta"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Paso 3: Carga manual -->
+  <section class="card" id="carga-manual">
+    <h2><span class="step">3</span> Carga manual de novedades y horas extras</h2>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="form-novedades">Novedades</div>
+      <div class="tab" data-tab="form-horas-extras">Horas Extras</div>
+    </div>
+
+    <!-- Form Novedades -->
+    <div class="tab-content active" id="form-novedades">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Empleado</label>
+          <select id="nov-empleado"></select>
+        </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="nov-fecha" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Motivo</label>
+          <select id="nov-motivo">
+            <option value="">Seleccionar...</option>
+            <option value="Enfermedad">Enfermedad</option>
+            <option value="Día de estudio">Día de estudio</option>
+            <option value="Licencia Gremial">Licencia Gremial</option>
+            <option value="Certificado médico">Certificado médico</option>
+            <option value="Fallecimiento de familiar">Fallecimiento de familiar</option>
+            <option value="Turno médico">Turno médico</option>
+            <option value="Día de mudanza">Día de mudanza</option>
+            <option value="Día de partido">Día de partido</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Motivo personalizado</label>
+          <input type="text" id="nov-motivo-custom" placeholder="Si seleccionaste Otro..." />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>¿Con aviso?</label>
+          <select id="nov-aviso">
+            <option value="si">Con aviso</option>
+            <option value="no">Sin aviso</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>¿Tiene certificado?</label>
+          <select id="nov-certificado">
+            <option value="no">No</option>
+            <option value="si">Sí</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Llegada tarde (minutos)</label>
+          <input type="number" id="nov-llegada-tarde" min="0" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>Sanción</label>
+          <select id="nov-sancion">
+            <option value="">Ninguna</option>
+            <option value="Descuento de día">Descuento de día</option>
+            <option value="NO">No sancionar</option>
+            <option value="Pendiente">Pendiente</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-agregar-novedad">+ Agregar novedad</button>
+
+      <div class="table-scroll" style="margin-top:16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Fecha</th>
+              <th>Motivo</th>
+              <th>Cert.</th>
+              <th>Sanción</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-novedades"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Form Horas Extras -->
+    <div class="tab-content" id="form-horas-extras">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Empleado</label>
+          <select id="he-empleado"></select>
+        </div>
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="he-fecha" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Horario normal desde</label>
+          <input type="time" id="he-desde" />
+        </div>
+        <div class="form-group">
+          <label>Horario normal hasta</label>
+          <input type="time" id="he-hasta" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Hora extra desde</label>
+          <input type="time" id="he-he-desde" />
+        </div>
+        <div class="form-group">
+          <label>Hora extra hasta</label>
+          <input type="time" id="he-he-hasta" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Cantidad de horas extras</label>
+        <input type="number" id="he-cantidad" min="0.5" step="0.5" placeholder="2" />
+      </div>
+      <button class="btn btn-primary" id="btn-agregar-hora-extra">+ Agregar horas extras</button>
+
+      <div class="table-scroll" style="margin-top:16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Fecha</th>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Cant.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-horas-extras"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Paso 4: Generar -->
+  <section class="card hidden" id="descarga">
+    <h2><span class="step">4</span> Generar planillas</h2>
+    <p style="font-size:0.85rem; color:#666; margin-bottom:16px;">
+      Revisá los datos antes de generar. Se descargarán dos archivos.
+    </p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-primary" id="btn-descargar-ausencias">
+        Planilla de Ausencias
+      </button>
+      <button class="btn btn-outline" id="btn-descargar-trasnoches">
+        Trasnoches AVEL
+      </button>
+    </div>
+    <div class="status" style="margin-top:14px;">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Listo para generar</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Herramienta RRHH — Procesamiento 100% local, los datos no salen del navegador.
+</footer>
+
+<script src="js/parser-nelclock.js"></script>
+<script src="js/parser-roster.js"></script>
+<script src="js/engines.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
